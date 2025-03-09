@@ -3,63 +3,85 @@ import pandas as pd
 import openpyxl
 from io import BytesIO
 
-def generar_csvs(archivo_procesado, responsable):
-    wb = openpyxl.load_workbook(archivo_procesado, data_only=True)
-    ws = wb[wb.sheetnames[0]]  # Tomar la primera hoja
+def procesar_archivo(archivo_cargado, plantilla):
+    # Cargar archivo de plantilla seleccionado
+    plantilla_wb = openpyxl.load_workbook(plantilla)
+    plantilla_ws = plantilla_wb["PECLD07792"]
+    duplicado_ws = plantilla_wb["Duplicado"]
+    standar_ws = plantilla_wb["STD (PECLSTDEN02)"]
     
-    # Obtener nombre base desde A28
-    nombre_base = ws["A28"].value
-    if not nombre_base:
-        st.error("No se encontró un nombre válido en la celda A28.")
-        return None, None, None
+    # Cargar archivo CUALQUIERA.xlsx
+    wb = openpyxl.load_workbook(archivo_cargado, data_only=True)
+    if "BD_densidad_2020" not in wb.sheetnames:
+        st.error("El archivo cargado no contiene la hoja 'BD_densidad_2020'")
+        return None
+    ws = wb["BD_densidad_2020"]
     
-    # Obtener cabeceras desde fila 27
-    cabeceras = [cell.value for cell in ws[27] if cell.value is not None]
-    
-    # Obtener datos desde fila 28 en adelante
+    # Leer los datos desde A10 hasta R en la hoja BD_densidad_2020
     datos = []
-    for row in ws.iter_rows(min_row=28, values_only=True):
-        if any(row):
+    for row in ws.iter_rows(min_row=10, max_col=17, values_only=True):
+        if any(row):  # Solo tomar filas con datos
             datos.append(row)
     
-    df = pd.DataFrame(datos, columns=cabeceras)
+    # Pegar datos en la plantilla desde A28
+    start_row = 28
+    for i, row in enumerate(datos, start=start_row):
+        for j, value in enumerate(row, start=1):
+            plantilla_ws.cell(row=i, column=j, value=value)
     
-    # Filtrado para cada archivo y reordenación de columnas
-    if "QC_Type" not in df.columns:
-        st.error("No se encontró la columna 'QC_Type'. Asegúrate de que la estructura es correcta.")
-        return None, None, None
-    
-    # Archivo 1: Filtrar datos que NO contengan "DSTD" o "DEND" en QC_Type
-    df1 = df[~df["QC_Type"].isin(["DSTD", "DEND"])]
-    df1 = df1[["Holeid", "From", "To", "Sample number", "Displaced volume (g)", "Wet weight (g)",
-               "Dry weight (g)", "Coated dry weight (g)", "Weight in water (g)", "Coated weight in water (g)",
-               "Coat density", "moisture", "Determination method", "Date", "comments"]]
-    df1.insert(13, "Laboratory", "")  # Agregar columna vacía
-    df1.insert(15, "Responsible", responsable)  # Agregar responsable
-    
-    # Archivo 2: Filtrar datos donde QC_Type sea "DEND"
-    df2 = df[df["QC_Type"] == "DEND"]
-    df2 = df2[["hole_number", "depth_from", "depth_to", "sample", "displaced_volume_g_D", "dry_weight_g_D", 
-               "coated_dry_weight_g_D", "weight_water_g", "coated_wght_water_g", "coat_density", "QC_Type", 
-               "determination_method", "density_date", "comments"]]
-    df2.insert(13, "responsible", responsable)
-    
-    # Archivo 3: Filtrar datos donde QC_Type sea "DSTD"
-    df3 = df[df["QC_Type"] == "DSTD"]
-    df3 = df3[["hole_number", "displaced_volume_g", "dry_weight_g", "coated_dry_weight_g", "weight_water_g", 
-               "coated_wght_water_g", "coat_density", "DSTD_id", "determination_method", "density_date", "comments"]]
-    df3.insert(10, "responsible", responsable)
-    
-    # Convertir dataframes a CSV en memoria
-    def convertir_a_csv(df):
-        output = BytesIO()
-        df.to_csv(output, index=False, encoding='utf-8')
-        output.seek(0)
-        return output
-    
-    return (convertir_a_csv(df1), convertir_a_csv(df2), convertir_a_csv(df3), nombre_base)
+    # Eliminar filas en blanco debajo de los datos pegados
+    max_row = plantilla_ws.max_row
+    columns = 17  # Número de columnas en la hoja
 
-# Interfaz en Streamlit
+    filas_eliminar = []
+    for i in range(start_row + len(datos), max_row + 1):
+        # Verificar si la fila está completamente vacía
+        if all(plantilla_ws.cell(row=i, column=j).value is None for j in range(1, columns + 1)):
+            filas_eliminar.append(i)
+
+    # Eliminar filas en orden inverso para evitar problemas con los índices
+    for row in reversed(filas_eliminar):
+        plantilla_ws.delete_rows(row)
+
+    # Aplicar color de relleno a las filas que contengan "DSTD" o "DEND" en alguna celda
+    from openpyxl.styles import PatternFill
+    fill = PatternFill(start_color="E26B0A", end_color="E26B0A", fill_type="solid")
+    
+    for row in plantilla_ws.iter_rows(min_row=28, max_col=17):
+        if any(cell.value in ["DSTD", "DEND"] for cell in row):
+            for cell in row:
+                cell.fill = fill
+    
+    # Buscar "DEND" en la columna "O" y copiar valores a la hoja "Duplicado"
+    dest_row = 11
+    for row in plantilla_ws.iter_rows(min_row=27, min_col=15, max_col=15, values_only=False):
+        if row[0].value == "DEND":
+            fila_actual = row[0].row
+            valor_d = plantilla_ws.cell(row=fila_actual, column=4).value
+            valor_m = plantilla_ws.cell(row=fila_actual, column=13).value
+            valor_m_ant = plantilla_ws.cell(row=fila_actual - 1, column=13).value
+            
+            duplicado_ws.cell(row=dest_row, column=1, value=valor_d)
+            duplicado_ws.cell(row=dest_row, column=3, value=valor_d)
+            duplicado_ws.cell(row=dest_row, column=4, value=valor_m)
+            duplicado_ws.cell(row=dest_row, column=2, value=valor_m_ant)
+            dest_row += 1
+    
+    # Cambiar el nombre de la hoja "PECLD07792" por el valor de la celda A28
+    valor_d1 = plantilla_ws.cell(row=28, column=17).value
+    valor_d2 = plantilla_ws.cell(row=28, column=13).value
+    standar_ws.cell(row=11, column=2, value=valor_d1)
+    standar_ws.cell(row=11, column=4, value=valor_d2)
+    nuevo_nombre = plantilla_ws.cell(row=28, column=1).value
+    if nuevo_nombre:
+        plantilla_ws.title = str(nuevo_nombre)
+    
+    # Guardar cambios en un BytesIO para permitir la descarga
+    output = BytesIO()
+    plantilla_wb.save(output)
+    output.seek(0)
+    return output
+
 st.title("Validador de registro de datos - densidad")
 
 # Selección de plantilla
@@ -72,13 +94,15 @@ opciones_plantilla = {
 plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
 plantilla_path = opciones_plantilla[plantilla_seleccionada]
 
-# Subir archivo procesado
-archivo_procesado = st.file_uploader("Carga archivo procesado (Certificado.xlsx)", type=["xlsx"])
+# Subir archivo
+archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
 
-if archivo_procesado is not None:
-    csv1, csv2, csv3, nombre_base = generar_csvs(archivo_procesado, plantilla_seleccionada)
-    
-    if csv1 and csv2 and csv3:
-        st.download_button(label=f"Descargar {nombre_base}.csv", data=csv1, file_name=f"{nombre_base}.csv", mime="text/csv")
-        st.download_button(label=f"Descargar {nombre_base}__QC-DUP.csv", data=csv2, file_name=f"{nombre_base}__QC-DUP.csv", mime="text/csv")
-        st.download_button(label=f"Descargar {nombre_base}__QC-STD.csv", data=csv3, file_name=f"{nombre_base}__QC-STD.csv", mime="text/csv")
+if archivo_cargado is not None:
+    output = procesar_archivo(archivo_cargado, plantilla_path)
+    if output:
+        st.download_button(
+            label="Descargar archivo procesado",
+            data=output,
+            file_name="Certificado.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
