@@ -18,7 +18,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     
     # Leer los datos desde A10 hasta R en la hoja BD_densidad_2020
     datos = []
-    for row in ws.iter_rows(min_row=10, max_col=18, values_only=True):
+    for row in ws.iter_rows(min_row=10, max_col=17, values_only=True):
         if any(row):  # Solo tomar filas con datos
             datos.append(row)
     
@@ -37,7 +37,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     from openpyxl.styles import PatternFill
     fill = PatternFill(start_color="E26B0A", end_color="E26B0A", fill_type="solid")
     
-    for row in plantilla_ws.iter_rows(min_row=28, max_col=18):
+    for row in plantilla_ws.iter_rows(min_row=28, max_col=17):
         if any(cell.value in ["DSTD", "DEND"] for cell in row):
             for cell in row:
                 cell.fill = fill
