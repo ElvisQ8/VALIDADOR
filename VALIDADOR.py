@@ -36,18 +36,22 @@ def procesar_archivo(archivo_cargado, plantilla, responsable):
     
     # Filtrar datos para CSVs
     df = pd.DataFrame(plantilla_ws.values)
-    df.columns = df.iloc[26]
-    df = df[27:].reset_index(drop=True)
+    df.columns = df.iloc[0]  # Asignar la primera fila como encabezados
+    df = df[1:].reset_index(drop=True)  # Eliminar la fila de encabezados del contenido
     
-    df1 = df[~df["QC_Type"].isin(["DSTD", "DEND"])][["Holeid", "From", "To", "Sample number", "Displaced volume (g)", "Wet weight (g)", "Dry weight (g)", "Coated dry weight (g)", "Weight in water (g)", "Coated weight in water (g)", "Coat density", "moisture", "Determination method", "Date", "comments"]]
-    df1.insert(13, "Laboratory", "")
-    df1.insert(14, "Responsible", responsable)
-    
-    df2 = df[df["QC_Type"] == "DEND"][["hole_number", "depth_from", "depth_to", "sample", "displaced_volume_g_D", "dry_weight_g_D", "coated_dry_weight_g_D", "weight_water_g", "coated_wght_water_g", "coat_density", "QC_type", "determination_method", "density_date", "comments"]]
-    df2.insert(12, "Responsible", responsable)
-    
-    df3 = df[df["QC_Type"] == "DSTD"][["hole_number", "displaced_volume_g", "dry_weight_g", "coated_dry_weight_g", "weight_water_g", "coated_wght_water_g", "coat_density", "DSTD_id", "determination_method", "density_date", "comments"]]
-    df3.insert(10, "Responsible", responsable)
+    if "QC_Type" in df.columns:
+        df1 = df[~df["QC_Type"].isin(["DSTD", "DEND"])][["Holeid", "From", "To", "Sample number", "Displaced volume (g)", "Wet weight (g)", "Dry weight (g)", "Coated dry weight (g)", "Weight in water (g)", "Coated weight in water (g)", "Coat density", "moisture", "Determination method", "Date", "comments"]]
+        df1.insert(13, "Laboratory", "")
+        df1.insert(14, "Responsible", responsable)
+        
+        df2 = df[df["QC_Type"] == "DEND"][["hole_number", "depth_from", "depth_to", "sample", "displaced_volume_g_D", "dry_weight_g_D", "coated_dry_weight_g_D", "weight_water_g", "coated_wght_water_g", "coat_density", "QC_type", "determination_method", "density_date", "comments"]]
+        df2.insert(12, "Responsible", responsable)
+        
+        df3 = df[df["QC_Type"] == "DSTD"][["hole_number", "displaced_volume_g", "dry_weight_g", "coated_dry_weight_g", "weight_water_g", "coated_wght_water_g", "coat_density", "DSTD_id", "determination_method", "density_date", "comments"]]
+        df3.insert(10, "Responsible", responsable)
+    else:
+        st.error("La columna 'QC_Type' no está presente en los datos procesados.")
+        return plantilla_wb, None, None, None
     
     return plantilla_wb, df1, df2, df3
 
@@ -76,10 +80,12 @@ if archivo_cargado is not None:
         output.seek(0)
         st.download_button(label="Descargar archivo procesado", data=output, file_name="Certificado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         
-        csv1 = df1.to_csv(index=False).encode("utf-8")
-        csv2 = df2.to_csv(index=False).encode("utf-8")
-        csv3 = df3.to_csv(index=False).encode("utf-8")
-        
-        st.download_button("Descargar CSV 1", data=csv1, file_name=f"{df.iloc[0, 0]}.csv", mime="text/csv")
-        st.download_button("Descargar CSV 2", data=csv2, file_name=f"{df.iloc[0, 0]}__QC-DUP.csv", mime="text/csv")
-        st.download_button("Descargar CSV 3", data=csv3, file_name=f"{df.iloc[0, 0]}__QC-STD.csv", mime="text/csv")
+        if df1 is not None:
+            csv1 = df1.to_csv(index=False).encode("utf-8")
+            st.download_button("Descargar CSV 1", data=csv1, file_name=f"{df.iloc[0, 0]}.csv", mime="text/csv")
+        if df2 is not None:
+            csv2 = df2.to_csv(index=False).encode("utf-8")
+            st.download_button("Descargar CSV 2", data=csv2, file_name=f"{df.iloc[0, 0]}__QC-DUP.csv", mime="text/csv")
+        if df3 is not None:
+            csv3 = df3.to_csv(index=False).encode("utf-8")
+            st.download_button("Descargar CSV 3", data=csv3, file_name=f"{df.iloc[0, 0]}__QC-STD.csv", mime="text/csv")
