@@ -8,17 +8,18 @@ def procesar_archivo(archivo_cargado, plantilla, responsable):
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
     duplicado_ws = plantilla_wb["Duplicado"]
+    standar_ws = plantilla_wb["STD (PECLSTDEN02)"]
     
     # Cargar archivo CUALQUIERA.xlsx
     wb = openpyxl.load_workbook(archivo_cargado, data_only=True)
     if "BD_densidad_2020" not in wb.sheetnames:
         st.error("El archivo cargado no contiene la hoja 'BD_densidad_2020'")
-        return None, None
+        return None, None, None, None
     ws = wb["BD_densidad_2020"]
     
     # Leer los datos desde A10 hasta R en la hoja BD_densidad_2020
     datos = []
-    for row in ws.iter_rows(min_row=10, max_col=18, values_only=True):
+    for row in ws.iter_rows(min_row=10, max_col=17, values_only=True):
         if any(row):  # Solo tomar filas con datos
             datos.append(row)
     
@@ -50,21 +51,21 @@ def procesar_archivo(archivo_cargado, plantilla, responsable):
     
     return plantilla_wb, df1, df2, df3
 
-st.title("Editor de Archivos Excel")
+st.title("Validador de registro de datos - densidad")
 
 # Selección de plantilla
 opciones_plantilla = {
-    "Nombre 1": "PLANTILLA.xlsx",
-    "Nombre 2": "https://raw.githubusercontent.com/tu_usuario/tu_repositorio/main/PLANTILLA1.xlsx",
-    "Nombre 3": "https://raw.githubusercontent.com/tu_usuario/tu_repositorio/main/PLANTILLA2.xlsx"
+    "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
+    "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
+    "YONATAN CON Y": "PLANTILLA2.xlsx"
 }
 
-plantilla_seleccionada = st.selectbox("Selecciona una plantilla:", list(opciones_plantilla.keys()))
+plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
 plantilla_path = opciones_plantilla[plantilla_seleccionada]
 responsable = plantilla_seleccionada
 
 # Subir archivo
-archivo_cargado = st.file_uploader("Carga un archivo Excel", type=["xlsx"])
+archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
 
 if archivo_cargado is not None:
     plantilla_wb, df1, df2, df3 = procesar_archivo(archivo_cargado, plantilla_path, responsable)
@@ -73,12 +74,12 @@ if archivo_cargado is not None:
         output = BytesIO()
         plantilla_wb.save(output)
         output.seek(0)
-        st.download_button(label="Descargar archivo procesado", data=output, file_name="Resultado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button(label="Descargar archivo procesado", data=output, file_name="Certificado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         
         csv1 = df1.to_csv(index=False).encode("utf-8")
         csv2 = df2.to_csv(index=False).encode("utf-8")
         csv3 = df3.to_csv(index=False).encode("utf-8")
         
-        st.download_button("Descargar CSV 1", data=csv1, file_name=f"{df.iloc[27, 0]}.csv", mime="text/csv")
-        st.download_button("Descargar CSV 2", data=csv2, file_name=f"{df.iloc[27, 0]}__QC-DUP.csv", mime="text/csv")
-        st.download_button("Descargar CSV 3", data=csv3, file_name=f"{df.iloc[27, 0]}__QC-STD.csv", mime="text/csv")
+        st.download_button("Descargar CSV 1", data=csv1, file_name=f"{df.iloc[0, 0]}.csv", mime="text/csv")
+        st.download_button("Descargar CSV 2", data=csv2, file_name=f"{df.iloc[0, 0]}__QC-DUP.csv", mime="text/csv")
+        st.download_button("Descargar CSV 3", data=csv3, file_name=f"{df.iloc[0, 0]}__QC-STD.csv", mime="text/csv")
