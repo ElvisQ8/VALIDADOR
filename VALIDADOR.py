@@ -58,6 +58,10 @@ def procesar_archivo(archivo_cargado, plantilla):
             dest_row += 1
     
     # Cambiar el nombre de la hoja "PECLD07792" por el valor de la celda A28
+    valor_d1=plantilla_ws.cell(row=28, column=17).value
+    valor_d2=plantilla_ws.cell(row=28, column=13).value
+    standar_ws.cell(row=11, column=2, value=valor_d1)
+    standar_ws.cell(row=11, column=4, value=valor_d2)
     nuevo_nombre = plantilla_ws.cell(row=28, column=1).value
     if nuevo_nombre:
         plantilla_ws.title = str(nuevo_nombre)
