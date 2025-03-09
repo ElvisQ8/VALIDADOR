@@ -72,22 +72,22 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
-st.title("Editor de Archivos Excel")
+st.title("Validador de registro de datos - densidad")
 
 # Selección de plantilla
 opciones_plantilla = {
     "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
-    "MILAGROS CHAMPIREINO": "PLANTILLA1.xlsx",
+    "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
     "YONATAN CON Y": "PLANTILLA2.xlsx"
 }
 
-plantilla_seleccionada = st.selectbox("Selecciona una plantilla:", list(opciones_plantilla.keys()))
+plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
 plantilla_path = opciones_plantilla[plantilla_seleccionada]
 
 # Subir archivo
-archivo_cargado = st.file_uploader("Carga un archivo Excel", type=["xlsx"])
+archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
 
 if archivo_cargado is not None:
     output = procesar_archivo(archivo_cargado, plantilla_path)
     if output:
-        st.download_button(label="Descargar archivo procesado", data=output, file_name="Resultado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button(label="Descargar archivo procesado", data=output, file_name="Certificado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
