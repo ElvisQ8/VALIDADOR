@@ -8,7 +8,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
     duplicado_ws = plantilla_wb["Duplicado"]
-    
+    standar_ws = plantilla_wb["STD (PECLSTDEN02)"]
     # Cargar archivo CUALQUIERA.xlsx
     wb = openpyxl.load_workbook(archivo_cargado, data_only=True)
     if "BD_densidad_2020" not in wb.sheetnames:
@@ -18,7 +18,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     
     # Leer los datos desde A10 hasta R en la hoja BD_densidad_2020
     datos = []
-    for row in ws.iter_rows(min_row=10, max_col=18, values_only=True):
+    for row in ws.iter_rows(min_row=10, max_col=17, values_only=True):
         if any(row):  # Solo tomar filas con datos
             datos.append(row)
     
@@ -37,7 +37,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     from openpyxl.styles import PatternFill
     fill = PatternFill(start_color="E26B0A", end_color="E26B0A", fill_type="solid")
     
-    for row in plantilla_ws.iter_rows(min_row=28, max_col=18):
+    for row in plantilla_ws.iter_rows(min_row=28, max_col=17):
         if any(cell.value in ["DSTD", "DEND"] for cell in row):
             for cell in row:
                 cell.fill = fill
@@ -58,9 +58,14 @@ def procesar_archivo(archivo_cargado, plantilla):
             dest_row += 1
     
     # Cambiar el nombre de la hoja "PECLD07792" por el valor de la celda A28
+    valor_d1=plantilla_ws.cell(row=28, column=17).value
+    valor_d2=plantilla_ws.cell(row=28, column=13).value
+    standar_ws.cell(row=11, column=2, value=valor_d1)
+    standar_ws.cell(row=11, column=4, value=valor_d2)
     nuevo_nombre = plantilla_ws.cell(row=28, column=1).value
     if nuevo_nombre:
         plantilla_ws.title = str(nuevo_nombre)
+
     
     # Guardar cambios en un BytesIO para permitir la descarga
     output = BytesIO()
