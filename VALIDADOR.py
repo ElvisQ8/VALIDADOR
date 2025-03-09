@@ -73,8 +73,8 @@ st.title("Editor de Archivos Excel")
 # Selección de plantilla
 opciones_plantilla = {
     "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
-    "MILAGROS CHAMPIREINO": "https://raw.githubusercontent.com/tu_usuario/tu_repositorio/main/PLANTILLA1.xlsx",
-    "YONATAN CON Y": "https://raw.githubusercontent.com/tu_usuario/tu_repositorio/main/PLANTILLA2.xlsx"
+    "MILAGROS CHAMPIREINO": "PLANTILLA1.xlsx",
+    "YONATAN CON Y": "PLANTILLA2.xlsx"
 }
 
 plantilla_seleccionada = st.selectbox("Selecciona una plantilla:", list(opciones_plantilla.keys()))
