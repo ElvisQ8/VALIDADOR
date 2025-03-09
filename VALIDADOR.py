@@ -8,7 +8,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
     duplicado_ws = plantilla_wb["Duplicado"]
-    
+    standar_ws = plantilla_wb["STD (PECLSTDEN02)"]
     # Cargar archivo CUALQUIERA.xlsx
     wb = openpyxl.load_workbook(archivo_cargado, data_only=True)
     if "BD_densidad_2020" not in wb.sheetnames:
