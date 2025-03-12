@@ -1,9 +1,9 @@
+import streamlit as st
 import pandas as pd
 import openpyxl
-import streamlit as st
 from io import BytesIO
 
-# Función para procesar el archivo del validador de datos
+# Código del primer archivo (Validador de Registro de Datos)
 def procesar_archivo(archivo_cargado, plantilla):
     # Cargar archivo de plantilla seleccionado
     plantilla_wb = openpyxl.load_workbook(plantilla)
@@ -83,65 +83,58 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
-# Cargar el archivo certificado.xlsx
+# Código del segundo archivo (Exportador de Datos a Plantilla)
 def load_data(file_path):
     return pd.read_excel(file_path, sheet_name=0, header=None, skiprows=27, usecols="A:R", nrows=101)
 
-# Función para eliminar "hola" y la fila 2 de la hoja "O"
 def clean_data(df, sheet_name):
     df_cleaned = df[df != 'hola']
     return df_cleaned
 
-# Función para copiar los datos según el mapeo y modificar la plantilla
 def copy_data_to_template(df, sheet_name, selected_name, template_file):
-    # Cargar la plantilla existente
     template = pd.ExcelFile(template_file)
 
     with BytesIO() as output:
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            # Escribir solo la hoja seleccionada de la plantilla (sin sobrescribir la primera fila)
             if sheet_name in template.sheet_names:
                 temp_df = template.parse(sheet_name)
                 temp_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-            # Filtrar y copiar los datos en la hoja correspondiente
             if sheet_name == "O":
                 df_filtered = df[~df[14].str.contains('DSTD|DEND', na=False)]
-                df_filtered[13] = selected_name  # Colocar el nombre en la columna "N" de la hoja "O"
+                df_filtered[13] = selected_name
             elif sheet_name == "DP":
                 df_filtered = df[df[14].str.contains('DEND', na=False)]
-                df_filtered[13] = selected_name  # Colocar el nombre en la columna "K" de la hoja "DP"
+                df_filtered[13] = selected_name
             elif sheet_name == "STD":
                 df_filtered = df[df[14].str.contains('DSTD', na=False)]
-                df_filtered[13] = selected_name  # Colocar el nombre en la columna "K" de la hoja "STD"
+                df_filtered[13] = selected_name
 
-            # Mapeo de columnas para la hoja "O"
             if sheet_name == "O":
-                writer.sheets[sheet_name].write_column('B2', df_filtered[0].fillna('').astype(str).values)  # Columna 0 -> Columna B
-                writer.sheets[sheet_name].write_column('C2', df_filtered[1].fillna('').astype(str).values)  # Columna 1 -> Columna C
-                writer.sheets[sheet_name].write_column('D2', df_filtered[2].fillna('').astype(str).values)  # Columna 2 -> Columna D
-                writer.sheets[sheet_name].write_column('E2', df_filtered[3].fillna('').astype(str).values)  # Columna 3 -> Columna E
-                writer.sheets[sheet_name].write_column('F2', df_filtered[4].fillna('').astype(str).values)  # Columna 4 -> Columna F
-                writer.sheets[sheet_name].write_column('G2', df_filtered[5].fillna('').astype(str).values)  # Columna 5 -> Columna G
-                writer.sheets[sheet_name].write_column('H2', df_filtered[6].fillna('').astype(str).values)  # Columna 6 -> Columna H
-                writer.sheets[sheet_name].write_column('I2', df_filtered[7].fillna('').astype(str).values)  # Columna 7 -> Columna I
-                writer.sheets[sheet_name].write_column('J2', df_filtered[8].fillna('').astype(str).values)  # Columna 8 -> Columna J
-                writer.sheets[sheet_name].write_column('K2', df_filtered[9].fillna('').astype(str).values)  # Columna 9 -> Columna K
-                writer.sheets[sheet_name].write_column('L2', df_filtered[10].fillna('').astype(str).values)  # Columna 10 -> Columna L
-                writer.sheets[sheet_name].write_column('M2', df_filtered[11].fillna('').astype(str).values)  # Columna 11 -> Columna M
-                writer.sheets[sheet_name].write_column('O2', df_filtered[13].fillna('').astype(str).values)  # Columna 13 -> Columna O
-                writer.sheets[sheet_name].write_column('Q2', df_filtered[16].fillna('').astype(str).values)  # Columna 16 -> Columna Q
+                writer.sheets[sheet_name].write_column('B2', df_filtered[0].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('C2', df_filtered[1].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('D2', df_filtered[2].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('E2', df_filtered[3].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('F2', df_filtered[4].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('G2', df_filtered[5].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('H2', df_filtered[6].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('I2', df_filtered[7].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('J2', df_filtered[8].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('K2', df_filtered[9].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('L2', df_filtered[10].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('M2', df_filtered[11].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('O2', df_filtered[13].fillna('').astype(str).values)
+                writer.sheets[sheet_name].write_column('Q2', df_filtered[16].fillna('').astype(str).values)
 
-        # Convertir el archivo a CSV para la descarga
-        output.seek(0)  # Asegurarse de que el flujo esté al principio
-        df_csv = pd.read_excel(output, sheet_name=sheet_name)  # Leer el archivo modificado en el buffer
+        output.seek(0)
+        df_csv = pd.read_excel(output, sheet_name=sheet_name)
         csv_output = BytesIO()
-        df_csv.to_csv(csv_output, index=False, sep=';', encoding='utf-8')  # Convertir a CSV
+        df_csv.to_csv(csv_output, index=False, sep=';', encoding='utf-8')
         csv_output.seek(0)
         return csv_output.getvalue()
 
-# Crear la interfaz de usuario con barra lateral para navegar entre páginas
-st.title("Aplicación de Exportación de Datos")
+# Crear la interfaz de usuario
+st.title("Aplicación de Datos")
 
 # Barra lateral con opciones de menú
 pagina = st.sidebar.radio("Selecciona una página", ["Validador de Datos", "Exportador"])
@@ -177,33 +170,25 @@ if pagina == "Validador de Datos":
 elif pagina == "Exportador":
     st.subheader("Bienvenido al Exportador")
     
-    # Selección del nombre
     names = ["nombre1", "nombre2", "nombre3"]
     selected_name = st.selectbox("Selecciona un nombre", names)
 
-    # Cargar archivo Excel subido por el usuario
     uploaded_file = st.file_uploader("Sube el archivo .xlsx", type=["xlsx"])
-
-    # Cargar la plantilla
-    template_file = "plantilla_export.xlsx"  # Asegúrate de que esta plantilla esté disponible en tu entorno
+    template_file = "plantilla_export.xlsx"
 
     if uploaded_file is not None:
-        # Cargar los datos
         df = load_data(uploaded_file)
 
-        # Botón para exportar la hoja "O"
         if st.button('Exportar Hoja O'):
             df_cleaned = clean_data(df, "O")
             file_o = copy_data_to_template(df_cleaned, "O", selected_name, template_file)
             st.download_button("Descargar Hoja O como CSV", data=file_o, file_name="plantilla_O.csv")
 
-        # Botón para exportar la hoja "DP"
         if st.button('Exportar Hoja DP'):
             df_cleaned = clean_data(df, "DP")
             file_dp = copy_data_to_template(df_cleaned, "DP", selected_name, template_file)
             st.download_button("Descargar Hoja DP como CSV", data=file_dp, file_name="plantilla_DP.csv")
 
-        # Botón para exportar la hoja "STD"
         if st.button('Exportar Hoja STD'):
             df_cleaned = clean_data(df, "STD")
             file_std = copy_data_to_template(df_cleaned, "STD", selected_name, template_file)
