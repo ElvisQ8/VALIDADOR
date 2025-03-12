@@ -134,4 +134,77 @@ def copy_data_to_template(df, sheet_name, selected_name, template_file):
 
         # Convertir el archivo a CSV para la descarga
         output.seek(0)  # Asegurarse de que el flujo esté al principio
-        df_csv
+        df_csv = pd.read_excel(output, sheet_name=sheet_name)  # Leer el archivo modificado en el buffer
+        csv_output = BytesIO()
+        df_csv.to_csv(csv_output, index=False, sep=';', encoding='utf-8')  # Convertir a CSV
+        csv_output.seek(0)
+        return csv_output.getvalue()
+
+# Crear la interfaz de usuario con barra lateral para navegar entre páginas
+st.title("Aplicación de Exportación de Datos")
+
+# Barra lateral con opciones de menú
+pagina = st.sidebar.radio("Selecciona una página", ["Validador de Datos", "Exportador"])
+
+# Página de "Validador de Datos"
+if pagina == "Validador de Datos":
+    st.subheader("Bienvenido al Validador de Registro de Datos")
+    
+    # Selección de plantilla
+    opciones_plantilla = {
+        "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
+        "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
+        "YONATAN CON Y": "PLANTILLA2.xlsx"
+    }
+
+    plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
+    plantilla_path = opciones_plantilla[plantilla_seleccionada]
+
+    # Subir archivo
+    archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
+
+    if archivo_cargado is not None:
+        output = procesar_archivo(archivo_cargado, plantilla_path)
+        if output:
+            st.download_button(
+                label="Descargar archivo procesado",
+                data=output,
+                file_name="Certificado.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+# Página de "Exportador"
+elif pagina == "Exportador":
+    st.subheader("Bienvenido al Exportador")
+    
+    # Selección del nombre
+    names = ["nombre1", "nombre2", "nombre3"]
+    selected_name = st.selectbox("Selecciona un nombre", names)
+
+    # Cargar archivo Excel subido por el usuario
+    uploaded_file = st.file_uploader("Sube el archivo .xlsx", type=["xlsx"])
+
+    # Cargar la plantilla
+    template_file = "plantilla_export.xlsx"  # Asegúrate de que esta plantilla esté disponible en tu entorno
+
+    if uploaded_file is not None:
+        # Cargar los datos
+        df = load_data(uploaded_file)
+
+        # Botón para exportar la hoja "O"
+        if st.button('Exportar Hoja O'):
+            df_cleaned = clean_data(df, "O")
+            file_o = copy_data_to_template(df_cleaned, "O", selected_name, template_file)
+            st.download_button("Descargar Hoja O como CSV", data=file_o, file_name="plantilla_O.csv")
+
+        # Botón para exportar la hoja "DP"
+        if st.button('Exportar Hoja DP'):
+            df_cleaned = clean_data(df, "DP")
+            file_dp = copy_data_to_template(df_cleaned, "DP", selected_name, template_file)
+            st.download_button("Descargar Hoja DP como CSV", data=file_dp, file_name="plantilla_DP.csv")
+
+        # Botón para exportar la hoja "STD"
+        if st.button('Exportar Hoja STD'):
+            df_cleaned = clean_data(df, "STD")
+            file_std = copy_data_to_template(df_cleaned, "STD", selected_name, template_file)
+            st.download_button("Descargar Hoja STD como CSV", data=file_std, file_name="plantilla_STD.csv")
