@@ -82,27 +82,43 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
+# Título de la aplicación
 st.title("Validador de registro de datos - densidad")
 
-# Selección de plantilla
-opciones_plantilla = {
-    "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
-    "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
-    "YONATAN CON Y": "PLANTILLA2.xlsx"
-}
+# Barra lateral con opciones de menú
+pagina = st.sidebar.radio("Selecciona una página", ["Inicio", "Exportador"])
 
-plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
-plantilla_path = opciones_plantilla[plantilla_seleccionada]
+# Página de "Inicio"
+if pagina == "Inicio":
+    st.subheader("Bienvenido al Validador de Registro de Datos")
+    
+    # Selección de plantilla
+    opciones_plantilla = {
+        "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
+        "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
+        "YONATAN CON Y": "PLANTILLA2.xlsx"
+    }
 
-# Subir archivo
-archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
+    plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
+    plantilla_path = opciones_plantilla[plantilla_seleccionada]
 
-if archivo_cargado is not None:
-    output = procesar_archivo(archivo_cargado, plantilla_path)
-    if output:
-        st.download_button(
-            label="Descargar archivo procesado",
-            data=output,
-            file_name="Certificado.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    # Subir archivo
+    archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
+
+    if archivo_cargado is not None:
+        output = procesar_archivo(archivo_cargado, plantilla_path)
+        if output:
+            st.download_button(
+                label="Descargar archivo procesado",
+                data=output,
+                file_name="Certificado.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+# Página de "Exportador"
+elif pagina == "Exportador":
+    st.subheader("Bienvenido al Exportador")
+    
+    # Agregar un botón que redirige a la página de EXPORTADOR
+    if st.button("Ir a EXPORTADOR"):
+        st.markdown("[Haz clic aquí para ir a EXPORTADOR](https://expor-or.streamlit.app/)")
