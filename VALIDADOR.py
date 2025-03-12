@@ -1,8 +1,9 @@
-import streamlit as st
 import pandas as pd
 import openpyxl
+import streamlit as st
 from io import BytesIO
 
+# Función para procesar el archivo del validador de datos
 def procesar_archivo(archivo_cargado, plantilla):
     # Cargar archivo de plantilla seleccionado
     plantilla_wb = openpyxl.load_workbook(plantilla)
@@ -82,43 +83,55 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
-# Título de la aplicación
-st.title("Validador de registro de datos - densidad")
+# Cargar el archivo certificado.xlsx
+def load_data(file_path):
+    return pd.read_excel(file_path, sheet_name=0, header=None, skiprows=27, usecols="A:R", nrows=101)
 
-# Barra lateral con opciones de menú
-pagina = st.sidebar.radio("Selecciona una página", ["Inicio", "Exportador"])
+# Función para eliminar "hola" y la fila 2 de la hoja "O"
+def clean_data(df, sheet_name):
+    df_cleaned = df[df != 'hola']
+    return df_cleaned
 
-# Página de "Inicio"
-if pagina == "Inicio":
-    st.subheader("Bienvenido al Validador de Registro de Datos")
-    
-    # Selección de plantilla
-    opciones_plantilla = {
-        "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
-        "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
-        "YONATAN CON Y": "PLANTILLA2.xlsx"
-    }
+# Función para copiar los datos según el mapeo y modificar la plantilla
+def copy_data_to_template(df, sheet_name, selected_name, template_file):
+    # Cargar la plantilla existente
+    template = pd.ExcelFile(template_file)
 
-    plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
-    plantilla_path = opciones_plantilla[plantilla_seleccionada]
+    with BytesIO() as output:
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            # Escribir solo la hoja seleccionada de la plantilla (sin sobrescribir la primera fila)
+            if sheet_name in template.sheet_names:
+                temp_df = template.parse(sheet_name)
+                temp_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-    # Subir archivo
-    archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
+            # Filtrar y copiar los datos en la hoja correspondiente
+            if sheet_name == "O":
+                df_filtered = df[~df[14].str.contains('DSTD|DEND', na=False)]
+                df_filtered[13] = selected_name  # Colocar el nombre en la columna "N" de la hoja "O"
+            elif sheet_name == "DP":
+                df_filtered = df[df[14].str.contains('DEND', na=False)]
+                df_filtered[13] = selected_name  # Colocar el nombre en la columna "K" de la hoja "DP"
+            elif sheet_name == "STD":
+                df_filtered = df[df[14].str.contains('DSTD', na=False)]
+                df_filtered[13] = selected_name  # Colocar el nombre en la columna "K" de la hoja "STD"
 
-    if archivo_cargado is not None:
-        output = procesar_archivo(archivo_cargado, plantilla_path)
-        if output:
-            st.download_button(
-                label="Descargar archivo procesado",
-                data=output,
-                file_name="Certificado.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            # Mapeo de columnas para la hoja "O"
+            if sheet_name == "O":
+                writer.sheets[sheet_name].write_column('B2', df_filtered[0].fillna('').astype(str).values)  # Columna 0 -> Columna B
+                writer.sheets[sheet_name].write_column('C2', df_filtered[1].fillna('').astype(str).values)  # Columna 1 -> Columna C
+                writer.sheets[sheet_name].write_column('D2', df_filtered[2].fillna('').astype(str).values)  # Columna 2 -> Columna D
+                writer.sheets[sheet_name].write_column('E2', df_filtered[3].fillna('').astype(str).values)  # Columna 3 -> Columna E
+                writer.sheets[sheet_name].write_column('F2', df_filtered[4].fillna('').astype(str).values)  # Columna 4 -> Columna F
+                writer.sheets[sheet_name].write_column('G2', df_filtered[5].fillna('').astype(str).values)  # Columna 5 -> Columna G
+                writer.sheets[sheet_name].write_column('H2', df_filtered[6].fillna('').astype(str).values)  # Columna 6 -> Columna H
+                writer.sheets[sheet_name].write_column('I2', df_filtered[7].fillna('').astype(str).values)  # Columna 7 -> Columna I
+                writer.sheets[sheet_name].write_column('J2', df_filtered[8].fillna('').astype(str).values)  # Columna 8 -> Columna J
+                writer.sheets[sheet_name].write_column('K2', df_filtered[9].fillna('').astype(str).values)  # Columna 9 -> Columna K
+                writer.sheets[sheet_name].write_column('L2', df_filtered[10].fillna('').astype(str).values)  # Columna 10 -> Columna L
+                writer.sheets[sheet_name].write_column('M2', df_filtered[11].fillna('').astype(str).values)  # Columna 11 -> Columna M
+                writer.sheets[sheet_name].write_column('O2', df_filtered[13].fillna('').astype(str).values)  # Columna 13 -> Columna O
+                writer.sheets[sheet_name].write_column('Q2', df_filtered[16].fillna('').astype(str).values)  # Columna 16 -> Columna Q
 
-# Página de "Exportador"
-elif pagina == "Exportador":
-    st.subheader("Bienvenido al Exportador")
-    
-    # Agregar un botón que redirige a la página de EXPORTADOR
-    if st.button("Ir a EXPORTADOR"):
-        st.markdown("[Haz clic aquí para ir a EXPORTADOR](https://expor-or.streamlit.app/)")
+        # Convertir el archivo a CSV para la descarga
+        output.seek(0)  # Asegurarse de que el flujo esté al principio
+        df_csv
