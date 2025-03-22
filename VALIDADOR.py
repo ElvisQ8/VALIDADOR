@@ -63,7 +63,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     return output
 
 # INTERFAZ STREAMLIT
-st.title("Generador de Certificado + Análisis de Densidades")
+st.title("OPTIMIZACION DE PROCESOS - DENSIDADES")
 pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador"])
 
 if pagina == "Generar certificado":
@@ -87,7 +87,7 @@ if pagina == "Generar certificado":
 
         # BLOQUE DE ANÁLISIS A PARTE - NO TOCA EL CERTIFICADO
         st.divider()
-        st.subheader("Análisis de Densidades (solo visualización)")
+        st.subheader("Análisis de Densidades")
 
         df = pd.read_excel(archivo_cargado, sheet_name=0, header=None)
         df = df.drop(index=np.arange(8)).reset_index(drop=True)
