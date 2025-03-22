@@ -49,7 +49,7 @@ def procesar_archivo(archivo_cargado, plantilla):
 
     # ELIMINAR 80 FILAS DESPUÉS DEL ÚLTIMO DATO PEGADO
     final_data_row = start_row + len(datos)
-    plantilla_ws.delete_rows(final_data_row + 0, 80)
+    plantilla_ws.delete_rows(final_data_row + 1, 80)
     standar_ws.cell(row=11, column=2, value=valor_d1)
     standar_ws.cell(row=11, column=4, value=valor_d2)
 
