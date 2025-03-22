@@ -8,6 +8,7 @@ from io import BytesIO
 
 # FUNCIÓN ORIGINAL DEL CERTIFICADO (NO SE MODIFICA)
 def procesar_archivo(archivo_cargado, plantilla):
+    # NOTA: Se añadirá limpieza de filas sobrantes después de pegar datos
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
     duplicado_ws = plantilla_wb["Duplicado"]
@@ -45,6 +46,10 @@ def procesar_archivo(archivo_cargado, plantilla):
 
     valor_d1 = plantilla_ws.cell(row=28, column=17).value
     valor_d2 = plantilla_ws.cell(row=28, column=13).value
+
+    # ELIMINAR 80 FILAS DESPUÉS DEL ÚLTIMO DATO PEGADO
+    final_data_row = start_row + len(datos)
+    plantilla_ws.delete_rows(final_data_row + 1, 80)
     standar_ws.cell(row=11, column=2, value=valor_d1)
     standar_ws.cell(row=11, column=4, value=valor_d2)
 
