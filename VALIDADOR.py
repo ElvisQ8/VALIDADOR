@@ -1,4 +1,4 @@
-# UNIFICACIÓN DE PROYECTO - GENERADOR + ANÁLISIS DE DENSIDADES
+# UNIFICACIÓN DE PROYECTO - CERTIFICADO + ANÁLISIS DE DENSIDADES CON FILTROS CORRECTOS
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,7 +6,8 @@ import openpyxl
 import plotly.graph_objects as go
 from io import BytesIO
 
-# ------ TU FUNCIÓN ORIGINAL DEL CERTIFICADO (SIN MODIFICAR) ------
+# FUNCIÓN ORIGINAL DEL CERTIFICADO
+
 def procesar_archivo(archivo_cargado, plantilla):
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
@@ -49,13 +50,12 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
-# ------ INTERFAZ STREAMLIT ------
+# STREAMLIT APP
 st.title("Generador de Certificado + Análisis de Densidades")
-
 pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador"])
 
 if pagina == "Generar certificado":
-    st.subheader("Bienvenido al Generador de certificados de densidad")
+    st.subheader("Generación de certificado y análisis de densidades")
 
     opciones_plantilla = {
         "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
@@ -70,20 +70,33 @@ if pagina == "Generar certificado":
     if archivo_cargado:
         output = procesar_archivo(archivo_cargado, plantilla_path)
         if output:
-            st.download_button(
-                label="Descargar archivo procesado",
-                data=output,
-                file_name="Certificado.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            st.download_button("Descargar archivo procesado", data=output, file_name="Certificado.xlsx")
 
-        # ----------------- SECCIÓN ANÁLISIS DE DENSIDADES ----------------
-        st.subheader("Análisis de Densidades")
+        # ---------------- ANALISIS DE DENSIDADES ----------------
+        st.subheader("Análisis de Densidades con Filtros")
         df = pd.read_excel(archivo_cargado, sheet_name=0, header=None)
         df = df.drop(index=np.arange(8)).reset_index(drop=True)
         df.columns = df.iloc[0]
         df = df.drop(index=0).reset_index(drop=True)
 
+        # Reemplazos y limpieza
+        df['TIPO DE CONTROL QA/QC'] = df['TIPO DE CONTROL QA/QC'].fillna('ORD')
+        df['MUESTRA'] = df['MUESTRA'].fillna('ESTANDAR')
+
+        # Filtros dinámicos
+        metodo = st.multiselect("Filtrar por MÉTODO DE ANÁLISIS", sorted(df['MÉTODO DE ANÁLISIS'].dropna().unique()))
+        tipo_control = st.multiselect("Filtrar por TIPO DE CONTROL QA/QC", sorted(df['TIPO DE CONTROL QA/QC'].dropna().unique()))
+        comentario = st.multiselect("Filtrar por COMENTARIO", sorted(df['COMENTARIO'].dropna().unique()))
+
+        filtrado = df.copy()
+        if metodo:
+            filtrado = filtrado[filtrado['MÉTODO DE ANÁLISIS'].isin(metodo)]
+        if tipo_control:
+            filtrado = filtrado[filtrado['TIPO DE CONTROL QA/QC'].isin(tipo_control)]
+        if comentario:
+            filtrado = filtrado[filtrado['COMENTARIO'].isin(comentario)]
+
+        # Validaciones
         rangos_lito = {
             'D': (2.67, 2.8), 'D1': (2.71, 2.95), 'VD': (2.51, 3.26), 'VM': (2.55, 3.86),
             'SSM': (2.8, 4.2), 'SPB': (3.32, 4.94), 'SPP': (3.51, 4.9),
@@ -91,13 +104,8 @@ if pagina == "Generar certificado":
             'SOP': (3.51, 4.9), 'VL': (2.51, 3.26)
         }
 
-        df['TIPO DE CONTROL QA/QC'] = df['TIPO DE CONTROL QA/QC'].fillna('ORD')
-        df['MUESTRA'] = df['MUESTRA'].fillna('ESTANDAR')
-
-        estado_list = []
-        comentario_list = []
-
-        for idx, row in df.iterrows():
+        estado_list, comentario_list = [], []
+        for idx, row in filtrado.iterrows():
             densidad = row['DENSIDAD']
             litologia = row['COMENTARIO']
             if pd.isna(densidad):
@@ -119,43 +127,47 @@ if pagina == "Generar certificado":
                 estado_list.append('Litología desconocida')
                 comentario_list.append('')
 
-        df['Estado'] = estado_list
-        df['Comentario Validación'] = comentario_list
+        filtrado['Estado'] = estado_list
+        filtrado['Comentario Validación'] = comentario_list
 
         # Validación DEND duplicados
-        for idx in range(1, len(df)):
-            row = df.iloc[idx]
+        for idx in range(1, len(filtrado)):
+            row = filtrado.iloc[idx]
             if row['TIPO DE CONTROL QA/QC'] == 'DEND':
                 densidad_actual = row['DENSIDAD']
-                densidad_anterior = df.iloc[idx - 1]['DENSIDAD']
+                densidad_anterior = filtrado.iloc[idx - 1]['DENSIDAD']
                 if pd.notna(densidad_actual) and pd.notna(densidad_anterior):
                     variacion = abs(densidad_actual - densidad_anterior) / densidad_anterior
                     if variacion > 0.10:
-                        df.at[idx, 'Estado'] = 'Error Duplicado'
-                        df.at[idx, 'Comentario Validación'] = 'Duplicado fuera del 10%'
+                        filtrado.at[idx, 'Estado'] = 'Error Duplicado'
+                        filtrado.at[idx, 'Comentario Validación'] = 'Duplicado fuera del 10%'
                     else:
-                        df.at[idx, 'Comentario Validación'] = 'Duplicado dentro del 10%'
+                        filtrado.at[idx, 'Comentario Validación'] = 'Duplicado dentro del 10%'
 
-        # Mostrar tabla
-        st.dataframe(df)
+        # Mostrar tabla con color
+        def highlight(row):
+            color = 'background-color: red' if row['Estado'] in ['Fuera de Rango', 'Error Duplicado'] else ''
+            return [color] * len(row)
+
+        st.dataframe(filtrado.style.apply(highlight, axis=1))
 
         # Gráfico con Plotly
         fig = go.Figure()
         for lit, (min_val, max_val) in rangos_lito.items():
-            fig.add_shape(type="line", x0=0, x1=len(df), y0=min_val, y1=min_val,
+            fig.add_shape(type="line", x0=0, x1=len(filtrado), y0=min_val, y1=min_val,
                           line=dict(color="gray", width=1, dash="dash"))
-            fig.add_shape(type="line", x0=0, x1=len(df), y0=max_val, y1=max_val,
+            fig.add_shape(type="line", x0=0, x1=len(filtrado), y0=max_val, y1=max_val,
                           line=dict(color="gray", width=1, dash="dash"))
 
         fig.add_trace(go.Scatter(
-            x=df['MUESTRA'],
-            y=df['DENSIDAD'],
+            x=filtrado['MUESTRA'],
+            y=filtrado['DENSIDAD'],
             mode='markers',
             marker=dict(
-                color=np.where(df['Estado'].isin(['Fuera de Rango', 'Error Duplicado']), 'red', 'blue'),
+                color=np.where(filtrado['Estado'].isin(['Fuera de Rango', 'Error Duplicado']), 'red', 'blue'),
                 size=8
             ),
-            text=df['COMENTARIO'],
+            text=filtrado['COMENTARIO'],
             hovertemplate='<b>Muestra:</b> %{x}<br><b>Densidad:</b> %{y}<br><b>Litología:</b> %{text}<extra></extra>',
             name='Densidad'
         ))
@@ -171,5 +183,5 @@ if pagina == "Generar certificado":
         st.plotly_chart(fig)
 
 elif pagina == "Exportador":
-    st.subheader("Bienvenido a la automatizador de exportación de datos para FUSION")
-    st.write("(Tu código de exportador va aquí sin tocar)")
+    st.subheader("Bienvenido al Exportador de datos para FUSION")
+    st.write("(Exportador intacto como pediste)")
