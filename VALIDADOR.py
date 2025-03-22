@@ -100,31 +100,45 @@ def copy_data_to_template(df, sheet_name, selected_name, template_file):
                 temp_df = template.parse(sheet_name)
                 temp_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
+            # Filtrar y copiar los datos según el tipo de hoja (O, DP, STD)
             if sheet_name == "O":
                 df_filtered = df[~df[14].str.contains('DSTD|DEND', na=False)]
                 df_filtered[13] = selected_name
+                # Mapeo de columnas para "O"
+                columns_mapping_o = [
+                    (0, 'A'), (1, 'B'), (2, 'C'), (3, 'D'), (4, 'E'),
+                    (5, 'F'), (6, 'G'), (7, 'H'), (8, 'I'), (9, 'J'),
+                    (10, 'K'), (11, 'L'), (13, 'P'), (16, 'O')
+                ]
+                for df_col, template_col in columns_mapping_o:
+                    writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
+
             elif sheet_name == "DP":
                 df_filtered = df[df[14].str.contains('DEND', na=False)]
                 df_filtered[13] = selected_name
+                # Mapeo de columnas para "DP"
+                columns_mapping_dp = [
+                    (0, 'A'), (1, 'B'), (2, 'C'), (3, 'D'), (4, 'E'),
+                    (6, 'F'), (7, 'G'), (8, 'H'), (9, 'I'), (10, 'J'),
+                    (14, 'K'), (13, 'L'), (16, 'N'), (17, 'O')
+                ]
+                for df_col, template_col in columns_mapping_dp:
+                    writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
+
             elif sheet_name == "STD":
                 df_filtered = df[df[14].str.contains('DSTD', na=False)]
                 df_filtered[13] = selected_name
-
-            if sheet_name == "O":
-                writer.sheets[sheet_name].write_column('B2', df_filtered[0].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('C2', df_filtered[1].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('D2', df_filtered[2].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('E2', df_filtered[3].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('F2', df_filtered[4].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('G2', df_filtered[5].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('H2', df_filtered[6].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('I2', df_filtered[7].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('J2', df_filtered[8].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('K2', df_filtered[9].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('L2', df_filtered[10].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('M2', df_filtered[11].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('O2', df_filtered[13].fillna('').astype(str).values)
-                writer.sheets[sheet_name].write_column('Q2', df_filtered[16].fillna('').astype(str).values)
+                # Mapeo de columnas para "STD"
+                columns_mapping_std = [
+                    (0, 'A'), (4, 'B'), (6, 'C'), (7, 'D'), (8, 'E'),
+                    (9, 'F'), (10, 'G'), (11, 'H'), (13, 'K'), (16, 'J'),
+                    (17, 'L')
+                ]
+                # En este caso, el valor "PECLSTDEN02" lo tratamos como un valor específico
+                peclstd_value = "PECLSTDEN02"
+                writer.sheets[sheet_name].write_column('H2', [peclstd_value] * len(df_filtered))  # Asignamos este valor en la columna H
+                for df_col, template_col in columns_mapping_std:
+                    writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
 
         output.seek(0)
         df_csv = pd.read_excel(output, sheet_name=sheet_name)
