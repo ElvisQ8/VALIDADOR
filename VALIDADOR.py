@@ -122,7 +122,7 @@ def copy_data_to_template(df, sheet_name, selected_name, template_file):
                 columns_mapping_dp = [
                     (0, 'A'), (1, 'B'), (2, 'C'), (3, 'D'), (4, 'E'),
                     (6, 'F'), (7, 'G'), (8, 'H'), (9, 'I'), (10, 'J'),
-                    (14, 'K'), (13, 'L'), (16, 'N'), (17, 'O')
+                    (14, 'K'), (13, 'N'), (16, 'M'), (17, 'O')
                 ]
                 for df_col, template_col in columns_mapping_dp:
                     writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
