@@ -183,4 +183,77 @@ if pagina == "Generar certificado":
         st.plotly_chart(fig)
 
 elif pagina == "Exportador":
-    st.subheader("Bienvenido al Exportador (código intacto como pediste)")
+    st.subheader("Bienvenido al Exportador de datos para FUSION")
+
+    # Código completo del exportador restaurado
+    def load_data(file_path):
+        return pd.read_excel(file_path, sheet_name=0, header=None, skiprows=27, usecols="A:R", nrows=101)
+
+    def clean_data(df):
+        return df[df != 'hola']
+
+    def copy_data_to_template(df, sheet_name, selected_name, template_file):
+        template = pd.ExcelFile(template_file)
+        with BytesIO() as output:
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                if sheet_name in template.sheet_names:
+                    temp_df = template.parse(sheet_name)
+                    temp_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+                if sheet_name == "O":
+                    df_filtered = df[~df[14].astype(str).str.contains('DSTD|DEND', na=False)]
+                    df_filtered[13] = selected_name
+                    columns_mapping_o = [(0, 'A'), (1, 'B'), (2, 'C'), (3, 'D'), (4, 'E'),
+                                         (5, 'F'), (6, 'G'), (7, 'H'), (8, 'I'), (9, 'J'),
+                                         (10, 'K'), (11, 'L'), (13, 'P'), (16, 'O')]
+                    for df_col, template_col in columns_mapping_o:
+                        writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
+
+                elif sheet_name == "DP":
+                    df_filtered = df[df[14].astype(str).str.contains('DEND', na=False)]
+                    df_filtered[13] = selected_name
+                    columns_mapping_dp = [(0, 'A'), (1, 'B'), (2, 'C'), (3, 'D'), (4, 'E'),
+                                          (6, 'F'), (7, 'G'), (8, 'H'), (9, 'I'), (10, 'J'),
+                                          (14, 'K'), (13, 'N'), (16, 'M'), (17, 'O')]
+                    for df_col, template_col in columns_mapping_dp:
+                        writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
+
+                elif sheet_name == "STD":
+                    df_filtered = df[df[14].astype(str).str.contains('DSTD', na=False)]
+                    df_filtered[13] = selected_name
+                    columns_mapping_std = [(0, 'A'), (4, 'B'), (6, 'C'), (7, 'D'), (8, 'E'),
+                                           (9, 'F'), (10, 'G'), (11, 'H'), (13, 'K'), (16, 'J'), (17, 'L')]
+                    peclstd_value = "PECLSTDEN02"
+                    writer.sheets[sheet_name].write_column('H2', [peclstd_value] * len(df_filtered))
+                    for df_col, template_col in columns_mapping_std:
+                        writer.sheets[sheet_name].write_column(f'{template_col}2', df_filtered[df_col].fillna('').astype(str).values)
+
+            output.seek(0)
+            df_csv = pd.read_excel(output, sheet_name=sheet_name)
+            csv_output = BytesIO()
+            df_csv.to_csv(csv_output, index=False, sep=';', encoding='utf-8')
+            csv_output.seek(0)
+            return csv_output.getvalue()
+
+    names = ["nombre1", "nombre2", "nombre3"]
+    selected_name = st.selectbox("Selecciona un usuario", names)
+    uploaded_file = st.file_uploader("Cargar el certificado .xlsx", type=["xlsx"])
+    template_file = "plantilla_export.xlsx"
+
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+
+        if st.button('Exportar Hoja O'):
+            df_cleaned = clean_data(df)
+            file_o = copy_data_to_template(df_cleaned, "O", selected_name, template_file)
+            st.download_button("Descargar Hoja O como CSV", data=file_o, file_name="plantilla_O.csv")
+
+        if st.button('Exportar Hoja DP'):
+            df_cleaned = clean_data(df)
+            file_dp = copy_data_to_template(df_cleaned, "DP", selected_name, template_file)
+            st.download_button("Descargar Hoja DP como CSV", data=file_dp, file_name="plantilla_DP.csv")
+
+        if st.button('Exportar Hoja STD'):
+            df_cleaned = clean_data(df)
+            file_std = copy_data_to_template(df_cleaned, "STD", selected_name, template_file)
+            st.download_button("Descargar Hoja STD como CSV", data=file_std, file_name="plantilla_STD.csv")
