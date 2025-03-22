@@ -158,7 +158,7 @@ pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Expo
 
 # Página de "Validador de Datos"
 if pagina == "Generar certificado":
-    st.subheader("Bienvenido al Generador de certyificados de densidad")
+    st.subheader("Bienvenido al Generador de certificados de densidad")
     
     # Selección de plantilla
     opciones_plantilla = {
@@ -185,12 +185,12 @@ if pagina == "Generar certificado":
 
 # Página de "Exportador"
 elif pagina == "Exportador":
-    st.subheader("Bienvenido al Exportador")
+    st.subheader("Bienvenido a la automatizador de exportación de datos para FUSION")
     
     names = ["nombre1", "nombre2", "nombre3"]
-    selected_name = st.selectbox("Selecciona un nombre", names)
+    selected_name = st.selectbox("Selecciona un usuario", names)
 
-    uploaded_file = st.file_uploader("Sube el archivo .xlsx", type=["xlsx"])
+    uploaded_file = st.file_uploader("Cargar el certificado .xlsx", type=["xlsx"])
     template_file = "plantilla_export.xlsx"
 
     if uploaded_file is not None:
