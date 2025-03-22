@@ -1,4 +1,4 @@
-# PROYECTO UNIFICADO - Certificado intacto + Análisis Densidad como bloque independiente
+# PROYECTO ELVIS Q.
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,9 +6,9 @@ import openpyxl
 import plotly.graph_objects as go
 from io import BytesIO
 
-# FUNCIÓN ORIGINAL DEL CERTIFICADO (NO SE MODIFICA)
+# CERTIFICADO
 def procesar_archivo(archivo_cargado, plantilla):
-    # NOTA: Se añadirá limpieza de filas sobrantes después de pegar datos
+   
     plantilla_wb = openpyxl.load_workbook(plantilla)
     plantilla_ws = plantilla_wb["PECLD07792"]
     duplicado_ws = plantilla_wb["Duplicado"]
@@ -47,7 +47,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     valor_d1 = plantilla_ws.cell(row=28, column=17).value
     valor_d2 = plantilla_ws.cell(row=28, column=13).value
 
-    # ELIMINAR 80 FILAS DESPUÉS DEL ÚLTIMO DATO PEGADO
+    
     final_data_row = start_row + len(datos)
     plantilla_ws.delete_rows(final_data_row + 0, 80)
     standar_ws.cell(row=11, column=2, value=valor_d1)
@@ -62,7 +62,7 @@ def procesar_archivo(archivo_cargado, plantilla):
     output.seek(0)
     return output
 
-# INTERFAZ STREAMLIT
+# INTERFAZ 
 st.title("OPTIMIZACION DE PROCESOS - DENSIDADES")
 pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador"])
 
@@ -80,12 +80,12 @@ if pagina == "Generar certificado":
     archivo_cargado = st.file_uploader("Carga archivo de datos en Excel", type=["xlsx"])
 
     if archivo_cargado:
-        # Generación de certificado sin tocar
+        # certificado
         output = procesar_archivo(archivo_cargado, plantilla_path)
         if output:
             st.download_button("Descargar archivo procesado", data=output, file_name="Certificado.xlsx")
 
-        # BLOQUE DE ANÁLISIS A PARTE - NO TOCA EL CERTIFICADO
+        # ANÁLISIS DE DENSIDADES CL
         st.divider()
         st.subheader("Análisis de Densidades")
 
@@ -94,11 +94,11 @@ if pagina == "Generar certificado":
         df.columns = df.iloc[0]
         df = df.drop(index=0).reset_index(drop=True)
 
-        # Preprocesamiento
+        
         df['TIPO DE CONTROL QA/QC'] = df['TIPO DE CONTROL QA/QC'].fillna('ORD')
         df['MUESTRA'] = df['MUESTRA'].fillna('ESTANDAR')
 
-        # Filtros de análisis
+        
         metodo = st.multiselect("Filtrar por MÉTODO DE ANÁLISIS", sorted(df['MÉTODO DE ANÁLISIS'].dropna().unique()))
         tipo_control = st.multiselect("Filtrar por TIPO DE CONTROL QA/QC", sorted(df['TIPO DE CONTROL QA/QC'].dropna().unique()))
         comentario = st.multiselect("Filtrar por DOMINIO", sorted(df['COMENTARIO'].dropna().unique()))
@@ -111,7 +111,7 @@ if pagina == "Generar certificado":
         if comentario:
             filtrado = filtrado[filtrado['COMENTARIO'].isin(comentario)]
 
-        # Validación de rangos
+        # LIMITES DE DATA ENTREGADA POR LOS TECNICOS ( ESTO QUEDA PENDIENTE REAFIRMAR CON MAS ENSAYOS)
         rangos_lito = {
             'D': (2.67, 2.8), 'D1': (2.71, 2.95), 'VD': (2.51, 3.26), 'VM': (2.55, 3.86),
             'SSM': (2.8, 4.2), 'SPB': (3.32, 4.94), 'SPP': (3.51, 4.9),
@@ -145,7 +145,7 @@ if pagina == "Generar certificado":
         filtrado['Estado'] = estados
         filtrado['Comentario Validación'] = comentarios
 
-        # Reglas de Duplicado DEND
+        
         for idx in range(1, len(filtrado)):
             if filtrado.iloc[idx]['TIPO DE CONTROL QA/QC'] == 'DEND':
                 actual = filtrado.iloc[idx]['DENSIDAD']
@@ -158,10 +158,10 @@ if pagina == "Generar certificado":
                     else:
                         filtrado.at[idx, 'Comentario Validación'] = 'Duplicado dentro del 10%'
 
-        # Visualizar dataframe con alertas
+        
         st.dataframe(filtrado)
 
-        # Gráfico
+        
         fig = go.Figure()
         for lit, (min_v, max_v) in rangos_lito.items():
             fig.add_shape(type="line", x0=0, x1=len(filtrado), y0=min_v, y1=min_v, line=dict(color="gray", dash="dash"))
@@ -183,9 +183,9 @@ if pagina == "Generar certificado":
         st.plotly_chart(fig)
 
 elif pagina == "Exportador":
-    st.subheader("Bienvenido al Exportador de datos para FUSION")
+    st.subheader("Exportador de datos para FUSION")
 
-    # Código completo del exportador restaurado
+    # EXPORTAR
     def load_data(file_path):
         return pd.read_excel(file_path, sheet_name=0, header=None, skiprows=27, usecols="A:R", nrows=101)
 
