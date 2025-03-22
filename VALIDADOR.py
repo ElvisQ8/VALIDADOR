@@ -151,14 +151,14 @@ def copy_data_to_template(df, sheet_name, selected_name, template_file):
         return csv_output.getvalue()
 
 # Crear la interfaz de usuario
-st.title("Aplicación de Datos")
+st.title("Generador de certificado")
 
 # Barra lateral con opciones de menú
-pagina = st.sidebar.radio("Selecciona una página", ["Validador de Datos", "Exportador"])
+pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador"])
 
 # Página de "Validador de Datos"
-if pagina == "Validador de Datos":
-    st.subheader("Bienvenido al Validador de Registro de Datos")
+if pagina == "Generar certificado":
+    st.subheader("Bienvenido al Generador de certyificados de densidad")
     
     # Selección de plantilla
     opciones_plantilla = {
