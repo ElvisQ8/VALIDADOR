@@ -101,7 +101,7 @@ if pagina == "Generar certificado":
         # Filtros de análisis
         metodo = st.multiselect("Filtrar por MÉTODO DE ANÁLISIS", sorted(df['MÉTODO DE ANÁLISIS'].dropna().unique()))
         tipo_control = st.multiselect("Filtrar por TIPO DE CONTROL QA/QC", sorted(df['TIPO DE CONTROL QA/QC'].dropna().unique()))
-        comentario = st.multiselect("Filtrar por COMENTARIO", sorted(df['COMENTARIO'].dropna().unique()))
+        comentario = st.multiselect("Filtrar por DOMINIO", sorted(df['COMENTARIO'].dropna().unique()))
 
         filtrado = df.copy()
         if metodo:
