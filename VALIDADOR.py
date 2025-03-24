@@ -70,9 +70,9 @@ if pagina == "Generar certificado":
     st.subheader("Generación de certificado")
 
     opciones_plantilla = {
-        "ROSA LA PRIMOROSA": "PLANTILLA.xlsx",
-        "MILAGROS CHAMPIRREINO": "PLANTILLA1.xlsx",
-        "YONATAN CON Y": "PLANTILLA2.xlsx"
+        "ROSA": "PLANTILLA.xlsx",
+        "MILAGROS ": "PLANTILLA1.xlsx",
+        "YONATAN": "PLANTILLA2.xlsx"
     }
     plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
     plantilla_path = opciones_plantilla[plantilla_seleccionada]
