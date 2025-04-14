@@ -235,7 +235,7 @@ elif pagina == "Exportador":
             csv_output.seek(0)
             return csv_output.getvalue()
 
-    names = ["nombre1", "nombre2", "nombre3"]
+    names = ["RELA", "MIAP", "RYSA"]
     selected_name = st.selectbox("Selecciona un usuario", names)
     uploaded_file = st.file_uploader("Cargar el certificado .xlsx", type=["xlsx"])
     template_file = "plantilla_export.xlsx"
