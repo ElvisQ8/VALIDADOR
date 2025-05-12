@@ -70,7 +70,7 @@ if pagina == "Generar certificado":
     st.subheader("Generación de certificado")
 
     opciones_plantilla = {
-        "ROSA": "PLANTILLA.xlsx",
+        "ARTURO": "PLANTILLA.xlsx",
         "MILAGROS ": "PLANTILLA1.xlsx",
         "YONATAN": "PLANTILLA2.xlsx"
     }
@@ -235,7 +235,7 @@ elif pagina == "Exportador":
             csv_output.seek(0)
             return csv_output.getvalue()
 
-    names = ["RELA", "MIAP", "RYSA"]
+    names = ["AJGU", "MIAP", "RYSA"]
     selected_name = st.selectbox("Selecciona un usuario", names)
     uploaded_file = st.file_uploader("Cargar el certificado .xlsx", type=["xlsx"])
     template_file = "plantilla_export.xlsx"
