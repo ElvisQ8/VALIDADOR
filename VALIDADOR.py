@@ -6,6 +6,10 @@ import openpyxl
 import plotly.graph_objects as go
 from io import BytesIO
 
+from openpyxl.styles import PatternFill, Font
+import plotly.express as px
+import csv
+
 # CERTIFICADO
 def procesar_archivo(archivo_cargado, plantilla):
    
