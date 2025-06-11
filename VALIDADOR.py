@@ -69,7 +69,7 @@ def procesar_archivo(archivo_cargado, plantilla):
 
 # INTERFAZ 
 st.title("OPTIMIZACION DE PROCESOS - DENSIDADES")
-pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador", "YAMILA"])
+pagina = st.sidebar.radio("Selecciona un proceso", ["Generar certificado", "Exportador", "Validación Logueo y Muestreo"])
 
 if pagina == "Generar certificado":
     st.subheader("Generación de certificado")
@@ -262,7 +262,8 @@ elif pagina == "Exportador":
             df_cleaned = clean_data(df)
             file_std = copy_data_to_template(df_cleaned, "STD", selected_name, template_file)
             st.download_button("Descargar Hoja STD como CSV", data=file_std, file_name="plantilla_STD.csv")
-elif pagina == "YAMILA":
+#cod YAMILA
+elif pagina == "Validación Logueo y Muestreo":
     st.subheader("VALIDADOR DE LOGUEO")
     def leer_csv(archivo):
         try:
