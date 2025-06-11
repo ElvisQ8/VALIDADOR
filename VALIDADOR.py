@@ -10,7 +10,7 @@ import os
 from openpyxl.styles import PatternFill, Font
 import plotly.express as px
 import csv
-
+import io
 # CERTIFICADO
 def procesar_archivo(archivo_cargado, plantilla):
    
