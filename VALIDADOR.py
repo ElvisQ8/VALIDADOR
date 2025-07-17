@@ -289,18 +289,11 @@ elif pagina == "Validación Logueo y Muestreo":
             return None
 
     def validar_geo(df, hole_number):
-        if df is None:
-            st.error("⚠️ Error: No se pudo cargar el archivo Geology correctamente.")
-            return None  # Detener la función si el DataFrame está vacío
-
+        
         df.columns = df.columns.str.strip().str.lower()  # Normalizar nombres de columnas
         
         # Filtrar por HOLE_NUMBER
         df_filtrado = df[df["hole_number"] == hole_number]
-
-        if df_filtrado.empty:
-            st.warning(f"No se encontraron datos para HOLE_NUMBER: {hole_number}")
-            return None
 
         condiciones = {
             31: ["VD"], 3: ["D", "D1"], 37: ["VAND"], 2: ["VL"], 28: ["VM"], 
@@ -363,10 +356,6 @@ elif pagina == "Validación Logueo y Muestreo":
     # Función para validar Alteration
     def validar_alteration(alteration_df, hole_number):
         try:
-            if alteration_df is None:
-                st.error("⚠️ Error: No se pudo cargar el archivo Alteration correctamente.")
-                return None
-
             alteration_df.columns = alteration_df.columns.str.strip().str.lower()
 
             required_columns = ['hole_number', 'intensity_1', 'intensity_2', 'intensity_3', 
@@ -586,8 +575,15 @@ elif pagina == "Validación Logueo y Muestreo":
     if st.button("Validar Geology", key="validate_geology") and geology_file:
         geology_df = leer_csv(geology_file)
         resultados_geo = validar_geo(geology_df, hole_number)
-        st.dataframe(resultados_geo)  # Tabla interactiva
-        descargar_resultados(resultados_geo, "resultados_geology.csv")
+
+        # Ordenar
+        resultados_geo = resultados_geo.sort_values(by="depth_from", ascending=True)
+
+        columnas_mostrar = ["hole_number", "depth_from", "depth_to", "clito", "unit", "validación_geo"]
+        columnas_existentes = [col for col in columnas_mostrar if col in resultados_geo.columns]
+
+        st.dataframe(resultados_geo[columnas_existentes])  # Tabla interactiva filtrada
+        descargar_resultados(resultados_geo[columnas_existentes], "resultados_geology.csv")
 
     if st.button("Validar Sample & Standards", key="validate_sample_standards") and sample_file and standards_file:
         sample_df = leer_csv(sample_file)
@@ -596,13 +592,17 @@ elif pagina == "Validación Logueo y Muestreo":
 
         if resultados_sample_standards is not None:
             st.dataframe(resultados_sample_standards)
-            exportar_a_excel(resultados_sample_standards, "PECLD07.xlsx")
 
-            with open("PECLD07.xlsx", "rb") as file:
-                st.download_button(label="⬇️ Descargar Excel",
-                                   data=file,
-                                   file_name="PECLD07.xlsx",
-                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            nombre_archivo = f"{hole_number.strip()}.xlsx"
+
+            exportar_a_excel(resultados_sample_standards, nombre_archivo)
+
+            with open(nombre_archivo, "rb") as file:
+                st.download_button(label="Descargar Excel",
+                                data=file,
+                                file_name=nombre_archivo,
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
                 
     if st.button("Validar Alteration", key="validate_alteration") and alteration_file:
         alteration_df = leer_csv(alteration_file)
@@ -677,7 +677,7 @@ elif pagina == "Validación Logueo y Muestreo":
             return None, None
 
         # Calcular porcentaje con la ecuación correcta
-        porcentaje_standards = (total_standards + total_dp_rg) / (total_standards + total_dp_rg + total_muestras_or) if (total_standards + total_dp_rg + total_muestras_or) > 0 else 0
+        porcentaje_standards = (total_standards + total_dp_rg) / (total_muestras_or)
 
         # Crear DataFrame con los resultados
         resumen_df = pd.DataFrame({
@@ -697,7 +697,7 @@ elif pagina == "Validación Logueo y Muestreo":
         st.subheader("Resultados de validación:")
         st.dataframe(resultados_sample_standards)
 
-        # 🔥 Nuevo análisis de porcentaje de estándares
+        # Nuevo análisis de porcentaje de estándares
         resumen_df, porcentaje = calcular_porcentaje_standards(sample_df, standards_df, hole_number)
         if resumen_df is not None:
             st.subheader("Resultados del análisis de estándares")
