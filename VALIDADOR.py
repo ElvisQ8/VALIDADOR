@@ -77,7 +77,10 @@ if pagina == "Generar certificado":
     opciones_plantilla = {
         "ARTURO": "PLANTILLA.xlsx",
         "MILAGROS ": "PLANTILLA1.xlsx",
-        "YONATAN": "PLANTILLA2.xlsx"
+        "YONATAN": "PLANTILLA2.xlsx",
+        "JOEL": "PLANTILLA3.xlsx",
+        "PATRICIA": "PLANTILLA4.xlsx",
+        "YAMILA": "PLANTILLA4.xlsx"
     }
     plantilla_seleccionada = st.selectbox("Seleccione el responsable:", list(opciones_plantilla.keys()))
     plantilla_path = opciones_plantilla[plantilla_seleccionada]
@@ -240,7 +243,7 @@ elif pagina == "Exportador":
             csv_output.seek(0)
             return csv_output.getvalue()
 
-    names = ["AJGU", "MIAP", "RYSA"]
+    names = ["AJGU", "MIAP", "RYSA", "JRAN", "PYBE", "YNPA"]
     selected_name = st.selectbox("Selecciona un usuario", names)
     uploaded_file = st.file_uploader("Cargar el certificado .xlsx", type=["xlsx"])
     template_file = "plantilla_export.xlsx"
@@ -712,3 +715,4 @@ elif pagina == "Validación Logueo y Muestreo":
                 color="variable"
             )
             st.plotly_chart(fig)
+
