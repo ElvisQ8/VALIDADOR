@@ -307,7 +307,7 @@ elif pagina == "Validación Logueo y Muestreo":
 
         df_filtrado['validación_geo'] = df_filtrado.apply(
             lambda row: 'correcto' if row['clito'] in condiciones and row['unit'] in condiciones[row['clito']] 
-            else 'incorrecto', axis=1
+            else '❌incorrecto', axis=1
         )
 
         return df_filtrado
@@ -324,10 +324,10 @@ elif pagina == "Validación Logueo y Muestreo":
             standards_filtered = standards_df[standards_df['hole_number'] == hole_number].copy()
 
             # DataFrame para Sample
-            df_sample = sample_filtered[['hole_number', 'sample_number', 'depth_from', 'depth_to', 'assay_sample_type_code','parent_sample_number']].copy()
+            df_sample = sample_filtered[['hole_number', 'sample_number', 'depth_from', 'depth_to', 'assay_sample_type_code', 'parent_sample_number']].copy()
             df_sample['tipo_muestra'] = df_sample['assay_sample_type_code']
             df_sample['depth_range'] = df_sample['depth_to'] - df_sample['depth_from']
-            df_sample['tramo_valido'] = df_sample['depth_range'].apply(lambda x: '✅ Correcto' if 0.5 <= x <= 1.5 else '⚠️ Observado')
+            df_sample['tramo_valido'] = df_sample['depth_range'].apply(lambda x: 'Correcto' if 0.5 <= x <= 1.5 else '⚠️ Observado')
             df_sample = df_sample.drop(columns=['assay_sample_type_code'])
 
             # DataFrame para Standards (sin validación de tramo)
@@ -337,6 +337,7 @@ elif pagina == "Validación Logueo y Muestreo":
             df_standards['depth_to'] = None
             df_standards['depth_range'] = None
             df_standards['tramo_valido'] = None
+            df_standards['parent_sample_number'] = None
             df_standards = df_standards.drop(columns=['assay_standard_code'])
 
             # Unir ambos DataFrames
@@ -344,14 +345,44 @@ elif pagina == "Validación Logueo y Muestreo":
             resultado = resultado.drop_duplicates(subset=['hole_number', 'sample_number', 'tipo_muestra'])
             resultado = resultado.sort_values(by='sample_number', ascending=True)
 
+            # Aplicar validación RG/DP
+            resultado['validacion_rg_dp'] = None
+            for i in range(1, len(resultado)):
+                actual = resultado.iloc[i]
+                anterior = resultado.iloc[i - 1]
+
+                if actual['tipo_muestra'] in ['RG', 'DP']:
+                    try:
+                        num_actual = int(actual['sample_number'][-7:])
+                        num_anterior = int(anterior['sample_number'][-7:])
+                        consecutivo = num_actual == num_anterior + 1
+                    except:
+                        consecutivo = False
+
+                    parent_ok = actual['parent_sample_number'] == anterior['sample_number']
+
+                    if consecutivo and parent_ok:
+                        mensaje = 'Correcto'
+                    elif not consecutivo and parent_ok:
+                        mensaje = '⚠️ Sample no consecutivo'
+                    elif consecutivo and not parent_ok:
+                        mensaje = '⚠️ Parent no coincide'
+                    else:
+                        mensaje = '❌ Ambos errores'
+
+                    resultado.at[resultado.index[i], 'validacion_rg_dp'] = mensaje
+                else:
+                    resultado.at[resultado.index[i], 'validacion_rg_dp'] = 'No aplica'
+
             # Reordenar columnas para visualización
             columnas_finales = [
                 'hole_number', 'sample_number', 'tipo_muestra', 'parent_sample_number',
-                'depth_from', 'depth_to', 'depth_range', 'tramo_valido'
+                'depth_from', 'depth_to', 'depth_range', 'tramo_valido', 'validacion_rg_dp'
             ]
             resultado = resultado[columnas_finales]
 
             return resultado
+
         except Exception as e:
             st.error(f"Error en validar_sample_standards: {e}")
             return None
@@ -380,11 +411,11 @@ elif pagina == "Validación Logueo y Muestreo":
                 resultados = []
                 for i in range(1, 4):
                     if row[f'intensity_{i}'] == 'FORT' and row[f'distribution_{i}'] != 'PERV':
-                        resultados.append(f"Incorrecto en intensity_{i} y distribution_{i} (esperado PERV)")
+                        resultados.append(f"❌Incorrecto en intensity_{i} y distribution_{i} (esperado PERV)")
                     if row[f'intensity_{i}'] == 'MODE' and pd.notnull(row[f'distribution_{i}']):
-                        resultados.append(f"Incorrecto en intensity_{i} y distribution_{i} (esperado vacío)")
+                        resultados.append(f"❌Incorrecto en intensity_{i} y distribution_{i} (esperado vacío)")
                     if row[f'intensity_{i}'] == 'FRCA' and row[f'distribution_{i}'] not in ['PUNT', 'VEIN']:
-                        resultados.append(f"Incorrecto en intensity_{i} y distribution_{i} (esperado PUNT o VEIN)")
+                        resultados.append(f"❌Incorrecto en intensity_{i} y distribution_{i} (esperado PUNT o VEIN)")
 
                 return " | ".join(resultados) if resultados else "Correcto"
 
@@ -396,14 +427,6 @@ elif pagina == "Validación Logueo y Muestreo":
         except Exception as e:
             st.error(f"Error durante la validación en ALTERATION: {e}")
             return None
-
-    # Mapeo entre Unit (Geology) y Rock_Type_Code (Major)
-    correspondencias = {
-        "D": "ANDS", "VAND": "ANDS", "D1": "DIOR", "VL": "DACT", "VM": "DACT", "VD": "DACT",
-        "SPP": "MASS", "SOP": "MASS", "SPB": "MASS", "SOB": "MASS", "SSL": "MASS", "SSM": "SMSS",
-        "BXMM": "FSTF", "I": "GRDR", "P": "PEGM", "BXC": "BRTC", "VRD": "RIDC", "CO": "SOLO",
-        "Q": "VTQZ", "LOST": "XXXX", "F": "PNZO", "LOST": "YYYY"
-    }
 
 
     # Función para validar intervalos
@@ -430,7 +453,7 @@ elif pagina == "Validación Logueo y Muestreo":
                 depth_from_correcto = row['depth_from'] in sample_depth_from
                 depth_to_correcto = row['depth_to'] in sample_depth_to
 
-                validacion = "Correcto" if depth_from_correcto and depth_to_correcto else "Incorrecto"
+                validacion = "Correcto" if depth_from_correcto and depth_to_correcto else "❌Incorrecto"
 
                 resultados.append({
                     'hole_number': row['hole_number'],
@@ -445,7 +468,7 @@ elif pagina == "Validación Logueo y Muestreo":
             st.error(f"Error durante la validación de intervalos en {tipo}: {e}")
             return None
 
-    # Función para validar Major vs Geology
+    # Función para validar Major vs Geology con continuidad litológica
     def validar_major_geology(geology_df, major_df, hole_number):
         try:
             geology_df.columns = geology_df.columns.str.strip().str.lower()
@@ -461,36 +484,90 @@ elif pagina == "Validación Logueo y Muestreo":
                 st.error(f"No se encontraron datos para HOLE_NUMBER {hole_number} en Major.")
                 return None
 
+            # 🔹 Mapeo de correspondencias
+            correspondencias = {
+                "D": "ANDS", "VAND": "ANDS", "D1": "DIOR", "VL": "DACT", "VM": "DACT", "VD": "DACT",
+                "SPP": "MASS", "SOP": "MASS", "SPB": "MASS", "SOB": "MASS", "SSL": "MASS", "SSM": "SMSS",
+                "BXMM": "FSTF", "I": "GRDR", "P": "PEGM", "BXC": "BRTC", "VRD": "RIDC", "CO": "SOLO",
+                "Q": "VTQZ", "LOST": "XXXX", "F": "PNZO", "LOST": "YYYY"
+            }
+
+            # 🔹 Validación de correspondencia Unit vs Rock_Type
             resultados = []
             for _, major_row in major_filtered.iterrows():
-                major_from, major_to, rock_type = major_row['depth_from'], major_row['depth_to'], major_row['rock_type_code']
+                major_from = major_row['depth_from']
+                major_to = major_row['depth_to']
+                rock_type = major_row['rock_type_code']
 
                 geology_segmentos = geology_filtered[
                     (geology_filtered['depth_from'] >= major_from) & (geology_filtered['depth_to'] <= major_to)
                 ]
 
                 if geology_segmentos.empty:
-                    validacion = "Incorrecto (No contiene segmentos de Geology)"
+                    validacion_correspondencia = "❌ No contiene segmentos de Geology"
                 else:
                     unidades_geology = geology_segmentos['unit'].unique()
-                    validacion = "Correcto" if all(correspondencias.get(unit, "") == rock_type for unit in unidades_geology) else "Incorrecto (Rock_Type no coincide con Units de Geology)"
+                    validacion_correspondencia = (
+                        "Correcto" if all(correspondencias.get(unit, "") == rock_type for unit in unidades_geology)
+                        else "❌ Rock_Type no coincide con Units de Geology"
+                    )
 
                 resultados.append({
                     'hole_number': hole_number,
                     'depth_from_major': major_from,
                     'depth_to_major': major_to,
                     'rock_type_major': rock_type,
-                    'validación': validacion
+                    'validación_correspondencia': validacion_correspondencia
                 })
 
+            # 🔹 Validación de continuidad litológica
+            major_sorted = major_filtered.sort_values(by='depth_from').reset_index(drop=True)
+            continuidad_flags = ['Correcto']  # Primer tramo siempre es correcto
+
+            for i in range(1, len(major_sorted)):
+                anterior = major_sorted.iloc[i - 1]
+                actual = major_sorted.iloc[i]
+
+                mismo_major = anterior['rock_type_code'] == actual['rock_type_code']
+                tramo_continuo = anterior['depth_to'] == actual['depth_from']
+
+                if mismo_major and tramo_continuo:
+                    continuidad_flags.append('❌ Tramo duplicado de litología')
+                else:
+                    continuidad_flags.append('Correcto')
+
+            # 🔹 Añadir la validación de continuidad a los resultados
+            for i in range(len(resultados)):
+                resultados[i]['validación_continuidad'] = continuidad_flags[i]
+
             return pd.DataFrame(resultados)
+
         except Exception as e:
             st.error(f"Error durante la validación entre Geology y Major: {e}")
             return None
 
     # Interfaz en Streamlit
-    st.title("Validación de Datos Geológicos")
 
+    st.title("🔍 Validación Integral de Datos para el Logueo Geológico y Muestreo")
+
+    with st.expander("¿Cómo funciona esta herramienta?"):
+        st.markdown("""
+        Esta aplicación permite validar las tablas fusion de Major, Geology, Alteration, Sample & Standards, Mineral por HOLE_NUMBER:
+
+        **Pasos:**
+        1. Carga los archivos en .csv descargados de Fusion Remote.
+        2. Ingresa el `HOLE_NUMBER` que deseas analizar.
+        3. Ejecuta las validaciones por pestaña.
+        4. Descarga los resultados en Excel.
+
+        **Resultados:**
+        - GEOLOGÍA: Verifica que las unidades geológicas y sus códigos estén correctamente asignados.
+        - ALTERACIÓN: Comprueba la consistencia de las intensidades y distribuciones de alteración.
+        - SAMPLE & STANDARDS: Valida las muestras y estándares, asegurando que los rangos de profundidad sean correctos y el QAQC tenga correcto parent sample y from-to.
+        - INTERVALOS: Verifica que los intervalos de profundidad en el Muestreo coincidan con los de Geology, Major, Alteration y Mine.
+        - MAJOR: Asegura que los segmentos de Major contengan las unidades de Geology correspondientes y su continuidad litológica sea correcta.
+        - INGRESO DE SAMPLE & STANDARDS: Calcula el porcentaje de estándares relevantes respecto a las muestras OR.
+        """)
     hole_number = st.text_input("Ingrese el HOLE_NUMBER a buscar:", key="hole_number_input")
 
     # Carga de archivos en formato TXT y conversión a DataFrame
@@ -500,7 +577,7 @@ elif pagina == "Validación Logueo y Muestreo":
     alteration_file = st.file_uploader("Cargar Alteration (.csv)", type=["csv"], key="alteration_uploader")
     mine_file = st.file_uploader("Cargar Mine (.csv)", type=["csv"], key="mine_uploader")
     major_file = st.file_uploader("Cargar Major (.csv)", type=["csv"], key="major_uploader")
-
+        
     # Convertir archivos TXT a DataFrames
     geology_df = leer_csv(geology_file) if geology_file else None
     sample_df = leer_csv(sample_file) if sample_file else None
@@ -643,14 +720,12 @@ elif pagina == "Validación Logueo y Muestreo":
 
         if major_df is None or major_df.empty:
             st.error("Error: El archivo Major está vacío o no se pudo cargar correctamente.")
-            st.stop()  # Detiene la ejecución sin errores
+            st.stop()
 
         resultados_major = validar_major_geology(geology_df, major_df, hole_number)
         if resultados_major is not None:
             st.dataframe(resultados_major)
             descargar_resultados(resultados_major, "resultados_major.csv")
-
-
 
     # Lista de estándares a analizar
     estandares_relevantes = ["PECLSTD006", "DP", "RG", "PECLSTD007", "PECLBLK002"]
@@ -716,3 +791,4 @@ elif pagina == "Validación Logueo y Muestreo":
             )
             st.plotly_chart(fig)
 
+    ]
