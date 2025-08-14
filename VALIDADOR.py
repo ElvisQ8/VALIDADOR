@@ -790,5 +790,3 @@ elif pagina == "Validación Logueo y Muestreo":
                 color="variable"
             )
             st.plotly_chart(fig)
-
-    ]
